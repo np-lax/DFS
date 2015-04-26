@@ -191,8 +191,9 @@ class FileExaminer:
             for lst in self.exifArray:
                 print("-------------")
                 #remove duplicate GPS data
-                lst.pop()
+                #lst.pop()
                 #roll through each list and print the contents
+                print(lst)
                 for item in lst:
                     print(item)
                 print("-------------")
@@ -287,7 +288,9 @@ class FileExaminer:
                             
                                             gpsCoor = {"Latitude: ": lat, "Longitude: ": lon, "Latitude Reference: ": latitideRef, "Longitude Reference: ": longitudeRef}  
                                    
-                                            rippedExifLst.append('GPS Data: %s' % gpsCoor)                         
+                                            rippedExifLst.append('GPS Data: %s' % gpsCoor)
+                                            break
+  
                             
                             #update overall object EXIF data array with list for this image
                             self.exifArray.append(rippedExifLst)
