@@ -154,8 +154,31 @@ class FileExaminer:
             
     def __del__(self):
         print("closed")
+        
+    def flattenList(self, lst):
+        tmpLst = []
+        for item in lst:
+            for i in item:
+                tmpLst.append(i)
+                
+        return tmpLst
+        
+    def convertToDegrees(self, value):
+        d0 = value[0][0]
+        d1 = value[0][1]
+        d = float(d0) / float(d1)
+         
+        m0 = value[1][0]
+        m1 = value[1][1]
+        m = float(m0) / float(m1)
+         
+        s0 = value[2][0]
+        s1 = value[2][1]
+        s = float(s0) / float(s1)
+         
+        return d + (m / 60.0) + (s / 3600.0)           
+    
    
-
     def printEXIFData(self):
         #use self.FileList and self.exifArray to print data collected from images with EXIF data
         #FileList has the file names and the exifArray is a list of lists of exif data
@@ -164,10 +187,11 @@ class FileExaminer:
         if len(self.exifArray) > 0:
             print "====================================================================="
             print "EXIF DATA"
-            #print "Image:", filePath
             #search through the overall exifArray for lists
             for lst in self.exifArray:
                 print("-------------")
+                #remove duplicate GPS data
+                lst.pop()
                 #roll through each list and print the contents
                 for item in lst:
                     print(item)
@@ -209,7 +233,7 @@ class FileExaminer:
                         #if APP1 found, check for EXIF data
                         if data[ptr + 4:ptr + 8] == b"Exif":  
                            #print("DEBUG: EXIF FOUND FOR %s" % files)
-                           
+
                             pilImage = Image.open(files)
                             EXIFData = pilImage._getexif()
                                                    
@@ -217,9 +241,9 @@ class FileExaminer:
                             rippedExifLst.append("Image: %s" % files)
             
             
-                            for tag, theValue in EXIFData.items():
+                            for tag, value in EXIFData.items():
                                 tagsValue = TAGS.get(tag, tag)
-                            
+
                                 if tagsValue == 'Artist':
                                     artistInfo = EXIFData.get(tag)
                                     rippedExifLst.append('Artist: %s' % artistInfo)
@@ -237,8 +261,33 @@ class FileExaminer:
                                     rippedExifLst.append('Camera Model: %s' % cameraModel)
                             
                                 if tagsValue == 'GPSInfo':
-                                    gpsInfo = EXIFData.get(tag)
-                                    rippedExifLst.append('GPS Data: %s' % gpsInfo)                         
+                                    gpsDict = {}
+                                    for gpsRaw in value:
+                                        gpsTag = GPSTAGS.get(gpsRaw, gpsRaw)
+                                        gpsDict[gpsTag] = value[gpsRaw]
+                            
+                                        if (gpsDict.has_key("GPSLatitude") and
+                                            gpsDict.has_key("GPSLongitude") and 
+                                            gpsDict.has_key("GPSLongitudeRef") and
+                                            gpsDict.has_key("GPSLatitudeRef")):
+                            
+                                            latitude = gpsDict["GPSLatitude"]
+                                            latitideRef = gpsDict["GPSLatitudeRef"]
+                                            longitude = gpsDict["GPSLongitude"]
+                                            longitudeRef = gpsDict["GPSLongitudeRef"]
+                                                                                        
+                                            lat = self.convertToDegrees(latitude)
+                                            lon = self.convertToDegrees(longitude)
+                            
+                                            if latitideRef == "S":
+                                                lat = 0 - lat
+                            
+                                            if longitudeRef == "W":
+                                                lon = 0 - lon
+                            
+                                            gpsCoor = {"Latitude: ": lat, "Longitude: ": lon, "Latitude Reference: ": latitideRef, "Longitude Reference: ": longitudeRef}  
+                                   
+                                            rippedExifLst.append('GPS Data: %s' % gpsCoor)                         
                             
                             #update overall object EXIF data array with list for this image
                             self.exifArray.append(rippedExifLst)
