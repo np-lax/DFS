@@ -190,10 +190,7 @@ class FileExaminer:
             #search through the overall exifArray for lists
             for lst in self.exifArray:
                 print("-------------")
-                #remove duplicate GPS data
-                #lst.pop()
                 #roll through each list and print the contents
-                print(lst)
                 for item in lst:
                     print(item)
                 print("-------------")
