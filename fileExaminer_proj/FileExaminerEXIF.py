@@ -28,6 +28,10 @@ from PIL.ExifTags import TAGS, GPSTAGS
 #                          Reads file into a buffer
 #          hashFile:       Generates the selected one-way hash of the file
 #          destructor:     Deletes the Forensic File Object
+#          noDataFound:    Inform user if no EXIF data was in the path
+#          convertToDegrees: Convert raw gps data from degrees/minutes/seconds to decimal degrees
+#          printEXIFData:    Goes through master EXIF array and prints out the individual lists
+#          ripExif:        Searches for EXIF data on a single file
 
 class FileExaminer:
 
