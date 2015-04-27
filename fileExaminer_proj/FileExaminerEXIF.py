@@ -122,11 +122,6 @@ class FileExaminer:
             self.lastError = "File Exception Raised"       
 
     # partially completed hash file method
-    
-    #added
-    def getPath(self):
-        return self.path
-    
     def hashFile(self,hashType):
         
         # Only supports two Hash Types currently
@@ -153,38 +148,50 @@ class FileExaminer:
             return False
             
     def __del__(self):
-        print("closed")
+        print("INFO: Object closed")
         
-    def flattenList(self, lst):
-        tmpLst = []
-        for item in lst:
-            for i in item:
-                tmpLst.append(i)
-                
-        return tmpLst
+    '''
+    noDataFound: print to console if no EXIF data found
+    @param: FileExaminer Object
+    @return: void
+    '''          
+    def noDataFound(self):
+        print "====================================================================="
+        print("INFO: no images w/EXIF data found in path")        
         
+    '''
+    convertToDegrees: takes in gps coords pulled from EXIF data and converts them to degrees
+    @param: FileExaminer Object, gps coords
+    @return: formatted gps corrds
+    '''           
     def convertToDegrees(self, value):
+        #read in degrees from tuples in value list
         d0 = value[0][0]
         d1 = value[0][1]
         d = float(d0) / float(d1)
-         
+        
+        #read in minutes from tuples in value list
         m0 = value[1][0]
         m1 = value[1][1]
         m = float(m0) / float(m1)
-         
+        
+        #read in seconds from tuples in value list
         s0 = value[2][0]
         s1 = value[2][1]
         s = float(s0) / float(s1)
          
-        return d + (m / 60.0) + (s / 3600.0)           
+        #return coord (lat/long) in the degree format 
+        return d + (m / 60.0) + (s / 3600.0)  
     
-   
+    '''
+    printEXIFData: goes through master EXIF array and prints out the individual lists
+    @param: FileExaminer Object
+    @return: void
+    '''      
     def printEXIFData(self):
-        #use self.FileList and self.exifArray to print data collected from images with EXIF data
-        #FileList has the file names and the exifArray is a list of lists of exif data
-        
         #check if any EXIF data was found in the file/dir - if so, print it out
         if len(self.exifArray) > 0:
+            #print exif header
             print "====================================================================="
             print "EXIF DATA"
             #search through the overall exifArray for lists
@@ -238,11 +245,15 @@ class FileExaminer:
                             #added file name to array
                             rippedExifLst.append("Image: %s" % files)
             
-            
+                            #iterate through tuples in EXIF data
                             for tag, value in EXIFData.items():
+                                #pull value of EXIF tag
                                 tagsValue = TAGS.get(tag, tag)
-
+                                
+                                #for each tag in EXIF items, check against the following tags
+                                
                                 if tagsValue == 'Artist':
+                                    #if a match, append data to temp list
                                     artistInfo = EXIFData.get(tag)
                                     rippedExifLst.append('Artist: %s' % artistInfo)
                             
@@ -259,33 +270,45 @@ class FileExaminer:
                                     rippedExifLst.append('Camera Model: %s' % cameraModel)
                             
                                 if tagsValue == 'GPSInfo':
+                                    #create a local gps dict
                                     gpsDict = {}
                                     for gpsRaw in value:
+                                        #pull GPS tag from raw GPS data
                                         gpsTag = GPSTAGS.get(gpsRaw, gpsRaw)
+                                        #populate dict with tags and values
                                         gpsDict[gpsTag] = value[gpsRaw]
-                            
+                                        
+                                        #ensure that the dict has the required info
                                         if (gpsDict.has_key("GPSLatitude") and
                                             gpsDict.has_key("GPSLongitude") and 
                                             gpsDict.has_key("GPSLongitudeRef") and
                                             gpsDict.has_key("GPSLatitudeRef")):
                             
+                                            #pull values from the dict
                                             latitude = gpsDict["GPSLatitude"]
                                             latitideRef = gpsDict["GPSLatitudeRef"]
                                             longitude = gpsDict["GPSLongitude"]
-                                            longitudeRef = gpsDict["GPSLongitudeRef"]
-                                                                                        
+                                            longitudeRef = gpsDict["GPSLongitudeRef"]                                         
+                                            
+                                            #convert lat/long to degrees                                            
                                             lat = self.convertToDegrees(latitude)
                                             lon = self.convertToDegrees(longitude)
                             
+                                            #correct for the lat/long reference as necessary
+                                            
                                             if latitideRef == "S":
                                                 lat = 0 - lat
                             
                                             if longitudeRef == "W":
                                                 lon = 0 - lon
-                            
+                                            
+                                            #build gps output string    
                                             gpsCoor = {"Latitude: ": lat, "Longitude: ": lon, "Latitude Reference: ": latitideRef, "Longitude Reference: ": longitudeRef}  
                                    
+                                            #append string to temp list for this image
                                             rippedExifLst.append('GPS Data: %s' % gpsCoor)
+                                            
+                                            #use break to ensure only 1 entry per image
                                             break
   
                             
@@ -302,12 +325,14 @@ class FileExaminer:
                         
                     #check for EOF or ~64K header size limit
                     if data[ptr:ptr+2] == b'0xFFD9' or ptr > 4000:
-                        #print("DEBUG: NO EXIF data found in image")
+                        self.noDataFound()
                         #break out of search loop
                         break
                     else:
                         #keep advancing pointer to search for APP1 header
                         ptr = ptr + 2
+            else:
+                self.noDataFound()      
 
           
 # End Forensic File Class ====================================
@@ -361,3 +386,32 @@ if __name__ == '__main__':
     else:
         print("Last Error: ", FEobj.lastError)
         
+        
+        
+######FUTURE DEVELOPMENT######
+#GUI Interface w/ progress bar#
+#Simple GUI
+
+#from Tkinter import *
+
+##create the window
+#root = Tk()
+
+##modify root window
+#root.title("FileExaminerMod")
+#root.geometry("200x100")
+
+##will allow to add widget
+#app = Frame(root)
+#app.grid()
+#button1 = Button(app, text = "Start")
+#button1.grid()
+
+##progress bar
+#p = ttk.Progressbar(parent, orient=HORIZONTAL, length=200, mode='indeterminate')
+
+##binding handler to event
+#self.bind_class('FileExaminer', '<Button1>')
+
+##kick off the event loop
+#root.mainloop()
